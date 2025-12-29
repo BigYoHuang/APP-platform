@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { APP_REGISTRY, getAppById } from './apps/registry';
 import { AppIcon } from './components/AppIcon';
+import { StatusBar } from './components/StatusBar';
 
 // Liquid Glass Wallpaper
 const WALLPAPER_URL = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop";
@@ -28,12 +29,23 @@ export default function App() {
       className="relative w-full h-full bg-cover bg-center overflow-hidden font-sans select-none"
       style={{ backgroundImage: `url(${WALLPAPER_URL})` }}
     >
+      {/* 
+        StatusBar: 
+        當沒有 App 開啟時，顯示白色文字，左側顯示時間。
+        當 App 開啟時，顯示深色文字 (lightMode=true)，左側變為「回主畫面」按鈕。
+      */}
+      <StatusBar 
+        lightMode={!!activeAppId} 
+        showHome={!!activeAppId}
+        onHomeClick={handleCloseApp}
+      />
+
       {/* Liquid Glass Overlay Effect */}
       <div className="absolute inset-0 bg-blue-900/10 backdrop-blur-[1px] pointer-events-none" />
 
       {/* --- HOME SCREEN --- */}
       <div 
-        className={`w-full h-full flex flex-col p-6 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${activeAppId ? 'scale-90 opacity-0 blur-sm pointer-events-none' : 'scale-100 opacity-100 blur-0'}`}
+        className={`w-full h-full flex flex-col p-6 pt-16 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${activeAppId ? 'scale-90 opacity-0 blur-sm pointer-events-none' : 'scale-100 opacity-100 blur-0'}`}
       >
         {/* App Grid - Flow layout instead of fixed Dock */}
         <div className="flex flex-wrap content-start gap-x-6 gap-y-8 justify-start">
@@ -59,25 +71,23 @@ export default function App() {
       {/* --- ACTIVE APP CONTAINER (Liquid Glass Modal) --- */}
       {ActiveAppComponent && (
         <div 
-          className={`absolute inset-0 z-50 flex flex-col transition-all duration-400 ease-[cubic-bezier(0.32,0.72,0,1)] 
+          className={`absolute inset-0 z-40 flex flex-col transition-all duration-400 ease-[cubic-bezier(0.32,0.72,0,1)] 
             ${isClosing ? 'translate-y-[120%] opacity-50 scale-95' : 'translate-y-0 opacity-100 scale-100'}`}
         >
           {/* Glass App Container */}
-          <div className="flex-1 m-2 sm:m-4 bg-white/80 backdrop-blur-2xl rounded-[3rem] shadow-2xl overflow-hidden border border-white/40 relative flex flex-col">
+          {/* 
+            移除底部邊距 (m-2 -> 0) 和圓角，使其更像原生全螢幕 App。
+            若您希望保留「卡片感」，可以改回 m-2 sm:m-4 rounded-[3rem]。
+            這裡我改為 m-0 rounded-none 以獲得最大的操作空間。
+          */}
+          <div className="flex-1 bg-white/95 backdrop-blur-2xl shadow-2xl overflow-hidden relative flex flex-col pt-10">
             
             {/* App Content */}
             <div className="flex-1 w-full overflow-hidden relative z-10">
                {ActiveAppComponent}
             </div>
 
-            {/* Home Indicator */}
-            <div className="absolute bottom-0 left-0 right-0 h-10 flex items-center justify-center z-20 pointer-events-none bg-gradient-to-t from-black/5 to-transparent">
-              <button 
-                onClick={handleCloseApp}
-                className="w-32 h-1.5 bg-gray-800/20 active:bg-gray-800/50 backdrop-blur-md rounded-full pointer-events-auto transition-colors hover:bg-gray-800/30"
-                aria-label="Close App"
-              />
-            </div>
+            {/* 原本底部的 Home Indicator 已移除，改用 StatusBar 控制 */}
           </div>
         </div>
       )}
