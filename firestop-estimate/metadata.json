@@ -1,0 +1,7 @@
+{
+  "name": "防火填塞估價拍照",
+  "description": "A professional construction site photo logging application allowing users to mark locations on floor plans, take photos, and export structured data.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

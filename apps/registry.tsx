@@ -1,6 +1,7 @@
 import React from 'react';
 import { AppConfig } from '../types';
 import ConstructionApp from './construction-photo-log/App';
+import FirestopApp from './firestop-estimate/App';
 
 // Use this placeholder when uploading new apps
 export const PlaceholderApp = ({ name }: { name: string }) => (
@@ -21,6 +22,13 @@ export const APP_REGISTRY: AppConfig[] = [
     iconColor: 'bg-gradient-to-br from-cyan-500 to-blue-600',
     iconImage: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=2070&auto=format&fit=crop', // Construction themed image
     component: <ConstructionApp />
+  },
+  {
+    id: 'firestop-estimate',
+    name: '防火填塞',
+    iconColor: 'bg-gradient-to-br from-orange-500 to-red-600',
+    iconImage: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?q=80&w=2669&auto=format&fit=crop', // Blueprint/Plan image
+    component: <FirestopApp />
   }
 ];
 
