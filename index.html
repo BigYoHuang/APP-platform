@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-TW" class="h-full">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
@@ -77,13 +77,14 @@
         border-radius: 10px;
       }
     </style>
+  <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="text-slate-800 overscroll-none touch-pan-y antialiased selection:bg-cyan-200 selection:text-cyan-900 bg-slate-50">
+  <body class="h-full text-slate-800 overscroll-none touch-pan-y antialiased selection:bg-cyan-200 selection:text-cyan-900 bg-slate-50">
     
     <!-- React 應用程式掛載點 -->
     <div id="root" class="h-full min-h-screen relative"></div>
     
     <!-- 載入主程式邏輯 -->
-    <script type="module" src="/index.tsx"></script>
+    <script type="module" src="./index.tsx"></script>
 </body>
 </html>
