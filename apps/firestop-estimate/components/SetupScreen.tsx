@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Trash2, ImageIcon, X, FolderOpen, Loader2 } from 'lucide-react';
+import { ImageIcon, X, FolderOpen, Loader2 } from 'lucide-react';
 import { ProjectInfo, FloorPlan } from '../types';
 
 interface SetupScreenProps {
@@ -126,17 +126,10 @@ const SetupScreen: React.FC<SetupScreenProps> = ({
   return (
     <div className="h-full overflow-y-auto bg-gray-50 p-6 flex flex-col items-center justify-center">
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-6 space-y-6 relative">
-        {/* 清除重置按鈕 */}
-        <button
-          onClick={onReset}
-          className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
-          title="清除暫存資料"
-        >
-          <Trash2 size={20} />
-        </button>
+        {/* 移除了右上角的垃圾桶圖示 */}
 
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-800">工地現場紀錄</h1>
+          <h1 className="text-2xl font-bold text-gray-800">防火填塞估價</h1>
           <p className="text-gray-500 text-sm mt-1">建立新專案 或 開啟舊專案</p>
         </div>
 

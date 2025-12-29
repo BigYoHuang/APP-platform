@@ -25,7 +25,7 @@ export const APP_REGISTRY: AppConfig[] = [
   },
   {
     id: 'firestop-estimate',
-    name: '防火填塞',
+    name: '防火填塞估價',
     iconColor: 'bg-gradient-to-br from-orange-500 to-red-600',
     iconImage: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?q=80&w=2669&auto=format&fit=crop', // Blueprint/Plan image
     component: <FirestopApp />

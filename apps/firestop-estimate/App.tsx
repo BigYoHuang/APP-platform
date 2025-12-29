@@ -680,15 +680,22 @@ const App: React.FC = () => {
   const handleConfirmExit = async (shouldSave: boolean) => {
     if (shouldSave) {
       await handleSaveProject();
-      // 給予瀏覽器一點時間處理下載觸發
-      setTimeout(async () => {
-        await dbService.clearAll();
-        window.location.reload();
-      }, 500);
-    } else {
-      await dbService.clearAll();
-      window.location.reload();
+      // 等待一下確保下載對話框出現
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
+    
+    // 清除資料庫
+    await dbService.clearAll();
+    
+    // 重置所有狀態以回到 SetupScreen (首頁)，而不是重新載入頁面 (會跳出 APP)
+    setProjectInfo({ name: '', floorPlans: [] });
+    setMarkers([]);
+    setStep('setup');
+    setCurrentPlanIndex(0);
+    setTransform({ x: 0, y: 0, scale: 1 });
+    setImgDimensions({ width: 0, height: 0 });
+    
+    setShowExitDialog(false);
   };
 
 

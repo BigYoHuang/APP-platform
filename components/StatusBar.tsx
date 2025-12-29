@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutGrid, Battery, Wifi } from 'lucide-react';
+import { LayoutGrid } from 'lucide-react';
 
 interface StatusBarProps {
   lightMode?: boolean; // True = Dark text (for light backgrounds), False = White text
@@ -57,13 +57,9 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         </div>
       )}
 
-      {/* Right Side: Status Icons */}
+      {/* Right Side: Company Name */}
       <div className={`flex items-center gap-2.5 min-w-[80px] justify-end ${textColor}`}>
-        <Wifi size={16} strokeWidth={2.5} />
-        <div className="flex items-center gap-1">
-           <span className="text-[11px] font-bold">100%</span>
-           <Battery size={20} strokeWidth={2.5} className="rotate-0" />
-        </div>
+        <span className="text-xs font-bold tracking-widest opacity-80">合煜消防</span>
       </div>
     </div>
   );
