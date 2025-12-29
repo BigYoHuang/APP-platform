@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <!-- 設定 viewport 以支援行動裝置，禁用縮放以模擬原生 App 體驗 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>施工照片記錄 - 合煜消防</title>
+    
+    <!-- 引入 Tailwind CSS (CDN版本用於快速原型開發) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Tailwind 自定義設定 -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            // 自定義顏色變數，用於 Glassmorphism 效果
+            colors: {
+              glass: 'rgba(255, 255, 255, 0.25)', // 通用玻璃背景色
+              glassBorder: 'rgba(255, 255, 255, 0.5)', // 玻璃邊框色
+              primary: '#0e7490', // 主色調 (Cyan)
+            },
+            // 自定義模糊度
+            backdropBlur: {
+              xs: '2px',
+            },
+            // 定義動畫關鍵影格
+            keyframes: {
+              slideUp: {
+                '0%': { transform: 'translateY(100%)', opacity: '0' }, // 從下方滑入
+                '100%': { transform: 'translateY(0)', opacity: '1' },
+              },
+              fadeIn: {
+                '0%': { opacity: '0' }, // 淡入效果
+                '100%': { opacity: '1' },
+              }
+            },
+            // 註冊動畫名稱與持續時間
+            animation: {
+              slideUp: 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)', // 緩動滑入
+              fadeIn: 'fadeIn 0.5s ease-out',
+            }
+          }
+        }
+      }
+    </script>
+    
+    <!-- Import Maps: 定義 ES Module 的依賴路徑 -->
+    <script type="importmap">
+{
+  "imports": {
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react/jsx-runtime": "https://esm.sh/react@^19.2.3/jsx-runtime",
+    "react-dom": "https://esm.sh/react-dom@^19.2.3",
+    "react-dom/client": "https://esm.sh/react-dom@^19.2.3/client",
+    "xlsx": "https://esm.sh/xlsx@^0.18.5",
+    "jszip": "https://esm.sh/jszip@^3.10.1",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "vite": "https://esm.sh/vite@^7.3.0"
+  }
+}
+</script>
+    
+    <style>
+      /* 自定義捲軸樣式，使其更細緻並符合毛玻璃風格 */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(15, 118, 110, 0.2);
+        border-radius: 10px;
+      }
+    </style>
+  <link rel="stylesheet" href="/index.css">
+</head>
+  <body class="text-slate-800 overscroll-none touch-pan-y antialiased selection:bg-cyan-200 selection:text-cyan-900 bg-slate-50">
+    
+    <!-- React 應用程式掛載點 -->
+    <div id="root" class="h-full min-h-screen relative"></div>
+    
+    <!-- 載入主程式邏輯 -->
+    <script type="module" src="./index.tsx"></script>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

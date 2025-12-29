@@ -1,0 +1,7 @@
+{
+  "name": "Construction Photo Log",
+  "description": "A mobile-first app for construction site photo documentation with watermarking and export capabilities.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

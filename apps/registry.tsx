@@ -1,5 +1,6 @@
 import React from 'react';
 import { AppConfig } from '../types';
+import ConstructionApp from './construction-photo-log/App';
 
 // Use this placeholder when uploading new apps
 export const PlaceholderApp = ({ name }: { name: string }) => (
@@ -13,15 +14,14 @@ export const PlaceholderApp = ({ name }: { name: string }) => (
 );
 
 // --- APP REGISTRY ---
-// Currently empty. Add your app configs here after uploading the zip.
 export const APP_REGISTRY: AppConfig[] = [
-  // Example format:
-  // {
-  //   id: 'my-app',
-  //   name: 'My App',
-  //   iconColor: 'bg-white',
-  //   component: <MyCustomApp />
-  // }
+  {
+    id: 'construction-log',
+    name: '施工紀錄',
+    iconColor: 'bg-gradient-to-br from-cyan-500 to-blue-600',
+    iconImage: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=2070&auto=format&fit=crop', // Construction themed image
+    component: <ConstructionApp />
+  }
 ];
 
 export const getAppById = (id: string): AppConfig | undefined => {
