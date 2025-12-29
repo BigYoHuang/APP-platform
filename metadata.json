@@ -1,0 +1,5 @@
+{
+  "name": "WebOS Platform",
+  "description": "An iOS-inspired web platform serving as a launcher for other web applications.",
+  "requestFramePermissions": []
+}
