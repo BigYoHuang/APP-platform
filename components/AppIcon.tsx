@@ -9,7 +9,7 @@ interface AppIconProps {
 
 export const AppIcon: React.FC<AppIconProps> = ({ app, onClick, showLabel = true }) => {
   return (
-    <div className="flex flex-col items-center gap-2 w-[80px] sm:w-[90px] animate-in fade-in zoom-in duration-500">
+    <div className="flex flex-col items-center gap-2 w-[92px] sm:w-[100px] animate-in fade-in zoom-in duration-500">
       <button
         onClick={() => onClick(app.id)}
         className="group relative w-[68px] h-[68px] sm:w-[74px] sm:h-[74px] rounded-[22px] transition-all duration-300 active:scale-95 hover:scale-105"
