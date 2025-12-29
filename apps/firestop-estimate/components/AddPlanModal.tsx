@@ -114,12 +114,12 @@ const AddPlanModal: React.FC<AddPlanModalProps> = ({
   // Fixed -> Absolute
   return (
     <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-lg rounded-xl shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
+      <div className="bg-white/95 backdrop-blur-2xl border border-white/20 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
         
         {/* 標題列 */}
-        <div className="p-4 border-b flex justify-between items-center shrink-0">
+        <div className="p-4 border-b border-gray-100 flex justify-between items-center shrink-0">
           <h3 className="font-bold text-lg text-gray-800">新增平面圖</h3>
-          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+          <button onClick={onClose} className="p-2 bg-gray-100/50 rounded-full text-gray-500 hover:text-gray-800 hover:bg-gray-200/50 transition-colors">
             <X size={20} />
           </button>
         </div>
@@ -130,23 +130,23 @@ const AddPlanModal: React.FC<AddPlanModalProps> = ({
           {/* 上傳區塊 */}
           <div
             onClick={() => !isProcessing && fileInputRef.current?.click()}
-            className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer transition group ${
+            className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition group ${
               isProcessing
-                ? 'border-gray-200 bg-gray-50 cursor-wait'
-                : 'border-gray-300 hover:bg-blue-50 hover:border-blue-300'
+                ? 'border-gray-200 bg-gray-50/50 cursor-wait'
+                : 'border-slate-300/60 hover:bg-blue-50/30 hover:border-blue-300/60 bg-white/50'
             }`}
           >
             {isProcessing ? (
               <div className="flex flex-col items-center py-2">
                 <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-2" />
-                <span className="text-sm text-gray-500 font-bold">正在處理檔案...</span>
+                <span className="text-sm text-slate-500 font-bold">正在處理檔案...</span>
               </div>
             ) : (
               <>
-                <div className="bg-gray-100 p-3 rounded-full mb-2 group-hover:bg-white transition">
-                  <ImageIcon className="w-6 h-6 text-gray-500 group-hover:text-blue-500" />
+                <div className="bg-white p-3 rounded-full mb-2 shadow-sm group-hover:scale-110 transition-transform">
+                  <ImageIcon className="w-6 h-6 text-slate-500 group-hover:text-blue-500" />
                 </div>
-                <span className="text-sm font-medium text-gray-600">點擊上傳 JPG/PNG/PDF</span>
+                <span className="text-sm font-medium text-slate-600">點擊上傳 JPG/PNG/PDF</span>
               </>
             )}
             <input
@@ -163,10 +163,10 @@ const AddPlanModal: React.FC<AddPlanModalProps> = ({
           {/* 預覽與更名列表 */}
           {pendingPlans.length > 0 && (
             <div className="space-y-3">
-              <h4 className="text-xs font-bold text-gray-500 uppercase">準備匯入 ({pendingPlans.length})</h4>
+              <h4 className="text-xs font-bold text-slate-500 uppercase ml-1">準備匯入 ({pendingPlans.length})</h4>
               {pendingPlans.map((plan, idx) => (
-                <div key={plan.id} className="flex items-center bg-gray-50 border border-gray-200 p-2 rounded-lg">
-                  <div className="w-12 h-12 bg-gray-200 rounded overflow-hidden flex-shrink-0 mr-3 border border-gray-300">
+                <div key={plan.id} className="flex items-center bg-white/50 border border-gray-200 p-2 rounded-xl shadow-sm">
+                  <div className="w-12 h-12 bg-slate-200 rounded-lg overflow-hidden flex-shrink-0 mr-3 border border-gray-100">
                     <img src={plan.src} className="w-full h-full object-cover" alt="preview" />
                   </div>
                   <div className="flex-1">
@@ -174,11 +174,11 @@ const AddPlanModal: React.FC<AddPlanModalProps> = ({
                       value={plan.name}
                       onFocus={(e) => e.target.select()}
                       onChange={(e) => handleNameChange(idx, e.target.value)}
-                      className="w-full text-sm font-bold text-gray-800 border-b border-transparent focus:border-blue-500 outline-none bg-transparent"
+                      className="w-full text-sm font-bold text-slate-800 border-b border-transparent focus:border-blue-500 outline-none bg-transparent"
                       placeholder="輸入圖說名稱"
                     />
                   </div>
-                  <button onClick={() => handleRemovePending(idx)} className="text-gray-400 hover:text-red-500 p-2">
+                  <button onClick={() => handleRemovePending(idx)} className="text-slate-400 hover:text-red-500 p-2 transition-colors">
                     <Trash2 size={16} />
                   </button>
                 </div>
@@ -188,17 +188,17 @@ const AddPlanModal: React.FC<AddPlanModalProps> = ({
         </div>
 
         {/* 底部按鈕 */}
-        <div className="p-4 border-t bg-gray-50 rounded-b-xl flex justify-end gap-3 shrink-0">
+        <div className="p-4 border-t border-gray-100 bg-gray-50/50 rounded-b-2xl flex justify-end gap-3 shrink-0 backdrop-blur-sm">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-600 font-bold hover:bg-gray-200 rounded-lg transition"
+            className="px-4 py-2 text-gray-600 font-bold hover:bg-gray-200/50 rounded-xl transition"
           >
             取消
           </button>
           <button
             onClick={handleConfirm}
             disabled={pendingPlans.length === 0 || isProcessing}
-            className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 hover:shadow-lg shadow-blue-500/20 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             <Plus size={18} />
             確認新增

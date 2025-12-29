@@ -841,8 +841,8 @@ const App: React.FC = () => {
   // 步驟 2: 工作區 (地圖標記) - Fixed -> Absolute
   return (
     <div className="absolute inset-0 bg-gray-900 flex flex-col overflow-hidden">
-      {/* 頂部導覽列 */}
-      <div className="bg-white px-4 py-3 shadow-md z-20 flex items-center justify-between shrink-0">
+      {/* 頂部導覽列 - Liquid Glass Style */}
+      <div className="bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-sm px-4 py-3 z-20 flex items-center justify-between shrink-0">
         <div className="flex flex-col min-w-0">
           <span className="text-xs text-gray-500 font-bold truncate max-w-[150px]">
             {projectInfo.name}
@@ -877,14 +877,14 @@ const App: React.FC = () => {
           </div>
         </div>
         
-        {/* 按鈕群組 */}
+        {/* 按鈕群組 - Glass Buttons */}
         <div className="flex items-center gap-2">
           {/* 儲存專案按鈕 */}
           <button
              onClick={handleSaveProject}
              disabled={!isZipLoaded}
              title="儲存專案檔 (.siteproj)"
-             className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition active:scale-95"
+             className="p-2 bg-blue-100/50 backdrop-blur-md border border-blue-200/50 text-blue-600 rounded-lg hover:bg-blue-200/50 transition active:scale-95"
           >
             <Save size={20} />
           </button>
@@ -894,8 +894,10 @@ const App: React.FC = () => {
             onClick={handleExport}
             disabled={!isZipLoaded}
             title="匯出照片與報表"
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold shadow-sm active:scale-95 transition ${
-              isZipLoaded ? 'bg-green-600 text-white' : 'bg-gray-300 text-gray-500'
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold shadow-sm active:scale-95 transition backdrop-blur-md border ${
+              isZipLoaded 
+                ? 'bg-emerald-500/80 border-emerald-400/50 text-white hover:bg-emerald-600/80' 
+                : 'bg-gray-200/50 border-gray-300/50 text-gray-400'
             }`}
           >
             <Download size={18} />
@@ -906,7 +908,7 @@ const App: React.FC = () => {
           <button
             onClick={handleExitClick}
             title="退出專案"
-            className="p-2 bg-gray-100 text-red-500 rounded-lg hover:bg-gray-200 transition active:scale-95"
+            className="p-2 bg-gray-100/50 backdrop-blur-md border border-gray-200/50 text-red-500 rounded-lg hover:bg-gray-200/50 transition active:scale-95"
           >
             <LogOut size={20} />
           </button>
@@ -916,7 +918,7 @@ const App: React.FC = () => {
       {/* 畫布區域 */}
       <div
         ref={containerRef}
-        className="flex-1 relative overflow-hidden bg-[#2a2a2a] touch-none select-none"
+        className="flex-1 relative overflow-hidden bg-[#1a1a1a] touch-none select-none"
         onContextMenu={(e) => e.preventDefault()}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -971,7 +973,7 @@ const App: React.FC = () => {
                     if (target) handleMarkerClick(target);
                   }
                 }}
-                className={`absolute -translate-x-1/2 -translate-y-1/2 min-w-[1.625rem] h-[1.625rem] px-1 bg-yellow-400 border border-red-600 flex items-center justify-center text-[13px] font-bold text-black shadow-sm z-10 whitespace-nowrap`}
+                className={`absolute -translate-x-1/2 -translate-y-1/2 min-w-[1.625rem] h-[1.625rem] px-1 bg-yellow-400 border border-red-600 flex items-center justify-center text-[13px] font-bold text-black shadow-lg shadow-black/20 z-10 whitespace-nowrap`}
               >
                 {m.label}
               </div>
@@ -1036,28 +1038,28 @@ const App: React.FC = () => {
         )}
       </div>
 
-      {/* 底部功能列 */}
-      <div className="bg-white pb-safe pt-2 px-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] flex justify-around items-center border-t shrink-0 z-20">
+      {/* 底部功能列 - Liquid Glass Style */}
+      <div className="bg-white/80 backdrop-blur-xl border-t border-white/20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] pb-safe pt-2 px-2 flex justify-around items-center shrink-0 z-20">
         <button
           onClick={() => setMode('move')}
           className={`flex-1 flex flex-col items-center py-3 rounded-lg transition-all duration-200 ${
             mode === 'move'
-              ? 'bg-blue-50 text-blue-600 translate-y-[-2px]'
-              : 'text-gray-400'
+              ? 'bg-blue-50/50 text-blue-600 translate-y-[-2px]'
+              : 'text-gray-400 hover:text-gray-600'
           }`}
         >
           <Move className={`mb-1 ${mode === 'move' ? 'scale-110' : ''}`} />
           <span className="text-xs font-bold">移動/縮放</span>
         </button>
 
-        <div className="w-px h-8 bg-gray-200 mx-2"></div>
+        <div className="w-px h-8 bg-gray-300/50 mx-2"></div>
 
         <button
           onClick={() => setMode('mark')}
           className={`flex-1 flex flex-col items-center py-3 rounded-lg transition-all duration-200 ${
             mode === 'mark'
-              ? 'bg-red-50 text-red-600 translate-y-[-2px]'
-              : 'text-gray-400'
+              ? 'bg-red-50/50 text-red-600 translate-y-[-2px]'
+              : 'text-gray-400 hover:text-gray-600'
           }`}
         >
           <MousePointer2
@@ -1100,7 +1102,7 @@ const App: React.FC = () => {
       {/* 退出確認對話框 */}
       {showExitDialog && (
         <div className="absolute inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm animate-in zoom-in-95 duration-200">
+          <div className="bg-white/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl p-6 w-full max-w-sm animate-in zoom-in-95 duration-200">
             <h3 className="text-xl font-bold text-gray-900 mb-2">確認退出</h3>
             <p className="text-gray-600 mb-6 text-sm">
               您確定要結束目前的專案嗎？<br />
@@ -1110,14 +1112,14 @@ const App: React.FC = () => {
               <button 
                 onClick={() => handleConfirmExit(true)}
                 disabled={!isZipLoaded}
-                className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold shadow-md active:scale-95 transition flex items-center justify-center gap-2"
+                className="w-full py-3 bg-blue-600/90 text-white rounded-lg font-bold shadow-lg shadow-blue-500/30 active:scale-95 transition flex items-center justify-center gap-2"
               >
                 <Save size={18} />
                 儲存專案並退出
               </button>
               <button 
                 onClick={() => handleConfirmExit(false)}
-                className="w-full py-3 bg-red-50 text-red-600 rounded-lg font-bold hover:bg-red-100 transition active:scale-95"
+                className="w-full py-3 bg-white text-red-500 border border-red-100 rounded-lg font-bold hover:bg-red-50 transition active:scale-95"
               >
                 不儲存直接退出
               </button>

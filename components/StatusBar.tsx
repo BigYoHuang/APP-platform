@@ -57,9 +57,9 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         </div>
       )}
 
-      {/* Right Side: Company Name */}
+      {/* Right Side: Company Name - Increased size x1.2 (text-xs -> text-[13px] approx) */}
       <div className={`flex items-center gap-2.5 min-w-[80px] justify-end ${textColor}`}>
-        <span className="text-xs font-bold tracking-widest opacity-80">合煜消防</span>
+        <span className="text-[13px] sm:text-sm font-bold tracking-widest opacity-90">合煜消防</span>
       </div>
     </div>
   );

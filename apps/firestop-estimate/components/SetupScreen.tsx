@@ -123,24 +123,24 @@ const SetupScreen: React.FC<SetupScreenProps> = ({
   };
 
   // min-h-screen -> h-full overflow-y-auto to allow scrolling inside the absolute container
+  // Updated Styles for Liquid Glass Effect
   return (
-    <div className="h-full overflow-y-auto bg-gray-50 p-6 flex flex-col items-center justify-center">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-6 space-y-6 relative">
-        {/* 移除了右上角的垃圾桶圖示 */}
-
+    <div className="h-full overflow-y-auto bg-gradient-to-br from-slate-100 to-slate-200 p-6 flex flex-col items-center justify-center">
+      <div className="w-full max-w-md bg-white/60 backdrop-blur-xl border border-white/40 rounded-2xl shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] p-6 space-y-6 relative">
+        
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-800">防火填塞估價</h1>
-          <p className="text-gray-500 text-sm mt-1">建立新專案 或 開啟舊專案</p>
+          <h1 className="text-2xl font-bold text-slate-800 drop-shadow-sm">防火填塞估價</h1>
+          <p className="text-slate-500 text-sm mt-1 font-medium">建立新專案 或 開啟舊專案</p>
         </div>
 
         {/* 開啟舊專案按鈕 */}
-        <div className="pb-4 border-b border-gray-100">
+        <div className="pb-4 border-b border-white/30">
           <button
             onClick={() => projectInputRef.current?.click()}
             disabled={!isZipLoaded}
-            className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-200 transition disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 bg-white/50 border border-white/60 text-slate-700 py-3 rounded-xl font-bold hover:bg-white/80 transition disabled:opacity-50 shadow-sm"
           >
-            <FolderOpen size={20} />
+            <FolderOpen size={20} className="text-slate-600" />
             <span>開啟專案檔 (.siteproj)</span>
           </button>
           <input
@@ -158,10 +158,10 @@ const SetupScreen: React.FC<SetupScreenProps> = ({
 
         {/* 專案名稱輸入框 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">專案名稱 (新專案)</label>
+          <label className="block text-sm font-bold text-slate-700 mb-1.5 ml-1">專案名稱 (新專案)</label>
           <input
             type="text"
-            className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+            className="w-full border border-white/30 bg-white/40 p-3 rounded-xl focus:ring-2 focus:ring-blue-400/50 focus:bg-white/60 outline-none transition-all shadow-inner placeholder:text-slate-400"
             placeholder="例如：XX建案_B棟"
             value={projectInfo.name}
             onChange={(e) => setProjectInfo({ ...projectInfo, name: e.target.value })}
@@ -170,27 +170,27 @@ const SetupScreen: React.FC<SetupScreenProps> = ({
 
         {/* 檔案上傳區塊 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">匯入平面圖</label>
+          <label className="block text-sm font-bold text-slate-700 mb-1.5 ml-1">匯入平面圖</label>
           <div
             onClick={() => !isProcessing && fileInputRef.current?.click()}
-            className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer transition group ${
+            className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition group ${
                isProcessing 
-                 ? 'border-gray-200 bg-gray-50 cursor-wait' 
-                 : 'border-gray-300 hover:bg-blue-50 hover:border-blue-300'
+                 ? 'border-gray-300 bg-gray-50/50 cursor-wait' 
+                 : 'border-slate-300/60 hover:bg-blue-50/30 hover:border-blue-300/60 bg-white/30'
             }`}
           >
             {isProcessing ? (
               <div className="flex flex-col items-center py-2">
                 <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-2" />
-                <span className="text-sm text-gray-500 font-bold">正在處理檔案...</span>
+                <span className="text-sm text-slate-500 font-bold">正在處理檔案...</span>
               </div>
             ) : (
               <>
-                <div className="bg-gray-100 p-3 rounded-full mb-2 group-hover:bg-white transition">
-                  <ImageIcon className="w-6 h-6 text-gray-500 group-hover:text-blue-500" />
+                <div className="bg-white/60 p-3 rounded-full mb-2 group-hover:bg-white group-hover:shadow-md transition">
+                  <ImageIcon className="w-6 h-6 text-slate-500 group-hover:text-blue-500" />
                 </div>
-                <span className="text-sm font-medium text-gray-600">點擊上傳 JPG/PNG/PDF</span>
-                <span className="text-xs text-gray-400 mt-1">PDF將自動轉換為圖片</span>
+                <span className="text-sm font-medium text-slate-600">點擊上傳 JPG/PNG/PDF</span>
+                <span className="text-xs text-slate-400 mt-1">PDF將自動轉換為圖片</span>
               </>
             )}
             <input
@@ -206,10 +206,10 @@ const SetupScreen: React.FC<SetupScreenProps> = ({
         </div>
 
         {/* 已上傳平面圖列表 */}
-        <div className="space-y-3 max-h-60 overflow-y-auto">
+        <div className="space-y-3 max-h-60 overflow-y-auto px-1">
           {projectInfo.floorPlans.map((plan, idx) => (
-            <div key={plan.id} className="flex items-center bg-white border border-gray-200 p-3 rounded-lg shadow-sm">
-              <div className="w-10 h-10 bg-gray-200 rounded overflow-hidden flex-shrink-0 mr-3">
+            <div key={plan.id} className="flex items-center bg-white/50 border border-white/50 p-2 rounded-xl shadow-sm">
+              <div className="w-10 h-10 bg-slate-200 rounded-lg overflow-hidden flex-shrink-0 mr-3 shadow-inner">
                 <img src={plan.src} className="w-full h-full object-cover" alt="preview" />
               </div>
               <div className="flex-1">
@@ -217,11 +217,11 @@ const SetupScreen: React.FC<SetupScreenProps> = ({
                   value={plan.name}
                   onFocus={(e) => e.target.select()}
                   onChange={(e) => onUpdatePlanName(idx, e.target.value)}
-                  className="w-full text-sm font-medium text-gray-800 border-b border-transparent focus:border-blue-500 outline-none bg-transparent"
+                  className="w-full text-sm font-medium text-slate-800 border-b border-transparent focus:border-blue-400 outline-none bg-transparent"
                   placeholder="輸入圖說名稱"
                 />
               </div>
-              <button onClick={() => onRemovePlan(idx)} className="text-gray-400 hover:text-red-500 p-2 transition-colors">
+              <button onClick={() => onRemovePlan(idx)} className="text-slate-400 hover:text-red-500 p-2 transition-colors">
                 <X size={18} />
               </button>
             </div>
@@ -232,7 +232,7 @@ const SetupScreen: React.FC<SetupScreenProps> = ({
         <button
           onClick={onStart}
           disabled={!projectInfo.name || projectInfo.floorPlans.length === 0 || isProcessing}
-          className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+          className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white py-3.5 rounded-xl font-bold hover:shadow-lg hover:shadow-blue-500/30 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
         >
           開始作業 / 儲存設定
         </button>

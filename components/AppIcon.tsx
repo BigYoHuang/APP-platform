@@ -34,9 +34,9 @@ export const AppIcon: React.FC<AppIconProps> = ({ app, onClick, showLabel = true
         </div>
       </button>
 
-      {/* Label with shadow for readability on complex backgrounds */}
+      {/* Label with shadow for readability on complex backgrounds. Removed truncate to allow wrapping for longer names (7 chars) */}
       {showLabel && (
-        <span className="text-[12px] font-medium text-white tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] select-none text-center truncate w-full px-1">
+        <span className="text-[12px] leading-tight font-medium text-white tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] select-none text-center w-full px-0.5 line-clamp-2 break-words">
           {app.name}
         </span>
       )}
