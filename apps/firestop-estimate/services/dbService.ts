@@ -81,6 +81,19 @@ const dbService = {
     });
   },
 
+  // --- 刪除標記 ---
+  async deleteMarker(id: number): Promise<void> {
+    await this.init();
+    return new Promise((resolve, reject) => {
+      if (!dbInstance) return reject('DB not initialized');
+      const tx = dbInstance.transaction(STORE_MARKERS, 'readwrite');
+      const store = tx.objectStore(STORE_MARKERS);
+      store.delete(id);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  },
+
   // --- 取得所有標記 ---
   // 讀取所有的標記點 (用於還原現場)
   async getAllMarkers(): Promise<Marker[]> {

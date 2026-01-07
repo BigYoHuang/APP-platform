@@ -25,6 +25,64 @@ const FLOOR_OPTIONS = generateFloorOptions();
 const NUMBER_OPTIONS = Array.from({ length: 189 }, (_, i) => i); // 0-188 的數字選項
 const Y_OFFSET = 30; // 放大鏡位移 (讓放大鏡顯示在手指上方，避免被手指遮擋)
 
+// --- 聚合邏輯輔助函式 (抽出以便共用) ---
+const getClusteredMarkers = (
+  markers: Marker[],
+  width: number,
+  height: number,
+  thresholdPx: number 
+) => {
+  if (width === 0 || height === 0) return [];
+  
+  // 將像素閾值轉換為百分比 (因為標記座標是百分比)
+  const thresholdX = (thresholdPx / width) * 100;
+  const thresholdY = (thresholdPx / height) * 100;
+
+  interface Cluster {
+    ids: number[];
+    seqs: number[];
+    sumX: number;
+    sumY: number;
+  }
+
+  const clusters: Cluster[] = [];
+  // 依序號排序，確保標籤 (如 "1,2,3") 順序正確
+  const sortedMarkers = [...markers].sort((a, b) => a.seq - b.seq);
+
+  sortedMarkers.forEach(marker => {
+    // 檢查此標記是否與現有的聚合中心夠近
+    const existing = clusters.find(c => {
+      const cx = c.sumX / c.ids.length;
+      const cy = c.sumY / c.ids.length;
+      return Math.abs(cx - marker.x) < thresholdX && Math.abs(cy - marker.y) < thresholdY;
+    });
+
+    if (existing) {
+      existing.ids.push(marker.id);
+      existing.seqs.push(marker.seq);
+      existing.sumX += marker.x;
+      existing.sumY += marker.y;
+    } else {
+      clusters.push({
+        ids: [marker.id],
+        seqs: [marker.seq],
+        sumX: marker.x,
+        sumY: marker.y
+      });
+    }
+  });
+
+  return clusters.map(c => ({
+    id: c.ids[0], // 使用第一個 ID 作為 key
+    allIds: c.ids,
+    x: c.sumX / c.ids.length,
+    y: c.sumY / c.ids.length,
+    // 關鍵修改：將序號用逗號連接，如 "3,4,5"
+    label: c.seqs.join(','), 
+    isCluster: c.ids.length > 1
+  }));
+};
+
 const App: React.FC = () => {
   const isZipLoaded = useJSZip(); // 檢查 JSZip 是否載入完成
   const isPDFLoaded = usePDFJS(); // 檢查 PDF.js 是否載入完成
@@ -140,74 +198,19 @@ const App: React.FC = () => {
     transformRef.current = { x: 0, y: 0, scale: 1 };
   }, [currentPlanIndex]);
 
-  // --- 聚合 (Cluster) 邏輯 ---
-  // 計算在當前視圖中，哪些標記重疊在一起，將它們合併顯示
+  // --- 聚合 (Cluster) 邏輯 - APP UI 顯示 ---
   const visibleMarkers = useMemo(() => {
     const planMarkers = markers.filter(m => m.planIndex === currentPlanIndex);
-    if (imgDimensions.width === 0 || imgDimensions.height === 0) return [];
-
-    // 計算聚合閾值：大約 29px 的範圍 (配合標記尺寸)
-    const thresholdX = (29 / imgDimensions.width) * 100;
-    const thresholdY = (29 / imgDimensions.height) * 100;
-
-    interface Cluster {
-      ids: number[]; // 聚合中包含的標記 ID 列表
-      seqs: number[]; // 聚合中包含的標記序號列表
-      sumX: number; // 用於計算平均位置
-      sumY: number;
-    }
-
-    const clusters: Cluster[] = [];
-    const sortedMarkers = [...planMarkers].sort((a, b) => a.seq - b.seq);
-
-    sortedMarkers.forEach(marker => {
-      // 檢查此標記是否與現有的聚合物件重疊
-      const existing = clusters.find(c => {
-        const cx = c.sumX / c.ids.length;
-        const cy = c.sumY / c.ids.length;
-        return Math.abs(cx - marker.x) < thresholdX && Math.abs(cy - marker.y) < thresholdY;
-      });
-
-      if (existing) {
-        // 加入現有聚合
-        existing.ids.push(marker.id);
-        existing.seqs.push(marker.seq);
-        existing.sumX += marker.x;
-        existing.sumY += marker.y;
-      } else {
-        // 建立新聚合
-        clusters.push({
-          ids: [marker.id],
-          seqs: [marker.seq],
-          sumX: marker.x,
-          sumY: marker.y
-        });
-      }
-    });
-
-    // 轉換為渲染用的格式
-    return clusters.map(c => ({
-      id: c.ids[0], // 使用第一個 ID 作為 key
-      allIds: c.ids, // 保存所有 ID 供點擊時查詢
-      x: c.sumX / c.ids.length, // 中心點 X
-      y: c.sumY / c.ids.length, // 中心點 Y
-      label: c.seqs.join(','), // 顯示文字 (如: "1,2,3")
-      isCluster: c.ids.length > 1 // 是否為多個標記聚合
-    }));
-
+    // 使用約 29px 作為 App 畫面上的聚合閾值
+    // 這會確保當兩個標記在 UI 上重疊時，會合併顯示
+    return getClusteredMarkers(planMarkers, imgDimensions.width, imgDimensions.height, 29);
   }, [markers, currentPlanIndex, imgDimensions]);
 
   // --- 事件處理：設定頁面 ---
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const fileList = e.target.files;
-    if (!fileList || fileList.length === 0) return;
-
-    // 這裡的邏輯移至 SetupScreen 處理，因為需要區分 Image 與 PDF 處理流程
-    // 但因為 App.tsx 擁有 projectInfo state，我們需要將處理完的 FloorPlan[] 傳遞回來
-    // 為了簡化，我們只在這裡保留一個 dummy handler，實際邏輯透過 prop 傳遞
+    // Legacy handler, SetupScreen handles this
   };
   
-  // 實際上 SetupScreen 會呼叫這個函式來更新 App 的 state
   const addFloorPlans = (newPlans: FloorPlan[]) => {
     setProjectInfo((prev) => ({
       ...prev,
@@ -268,7 +271,6 @@ const App: React.FC = () => {
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 2) {
       // 雙指觸控：縮放模式
-      // 如果正在等待標記 (長按檢測中)，立即取消
       if (markTimeoutRef.current) {
         clearTimeout(markTimeoutRef.current);
         markTimeoutRef.current = null;
@@ -277,9 +279,7 @@ const App: React.FC = () => {
 
       const touch1 = e.touches[0];
       const touch2 = e.touches[1];
-      // 計算兩指距離
       const dist = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
-      // 計算中心點
       const centerX = (touch1.clientX + touch2.clientX) / 2;
       const centerY = (touch1.clientY + touch2.clientY) / 2;
       
@@ -326,13 +326,11 @@ const App: React.FC = () => {
       const currentT = transformRef.current;
       const scaleFactor = dist / lastDistRef.current;
       
-      // 限制縮放範圍 (0.1x ~ 20x)
       let newScale = currentT.scale * scaleFactor;
       newScale = Math.min(Math.max(newScale, 0.1), 20);
       
       const effectiveScaleFactor = newScale / currentT.scale;
 
-      // 計算以雙指中心為基準的縮放位移修正
       const newX = midX - (lastCenterRef.current.x - currentT.x) * effectiveScaleFactor;
       const newY = midY - (lastCenterRef.current.y - currentT.y) * effectiveScaleFactor;
 
@@ -348,13 +346,11 @@ const App: React.FC = () => {
       const touch = e.touches[0];
       
       if (mode === 'mark') {
-        // 標記模式：更新放大鏡位置
         currentFingerPosRef.current = { clientX: touch.clientX, clientY: touch.clientY };
         if (isTouching) {
           updateLoupe({ clientX: touch.clientX, clientY: touch.clientY });
         }
       } else if (mode === 'move') {
-        // 移動模式：單指平移
         const last = lastTouchRef.current;
         if (last) {
           const dx = touch.clientX - last.x;
@@ -372,7 +368,6 @@ const App: React.FC = () => {
   };
 
   const handleTouchEnd = () => {
-    // 手指離開：清除計時器
     if (markTimeoutRef.current) {
       clearTimeout(markTimeoutRef.current);
       markTimeoutRef.current = null;
@@ -382,7 +377,6 @@ const App: React.FC = () => {
     lastTouchRef.current = null;
     lastCenterRef.current = null;
 
-    // 如果是在標記模式且手指離開，觸發新增標記
     if (mode === 'mark' && isTouching) {
       setIsTouching(false);
       if (imgCoord.x !== null && imgCoord.y !== null) {
@@ -396,20 +390,16 @@ const App: React.FC = () => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     
-    // UI位置：跟隨手指
     const touchX = pos.clientX - rect.left;
     const touchY = pos.clientY - rect.top;
     setTouchPos({ x: touchX, y: touchY });
 
-    // 邏輯位置：Y軸向上偏移，讓使用者看到手指下方的內容
     const effectiveY = touchY - Y_OFFSET;
-
     const currentT = transformRef.current;
-    // 將螢幕座標轉換回圖片原始座標
+    
     const rawX = (touchX - currentT.x) / currentT.scale;
     const rawY = (effectiveY - currentT.y) / currentT.scale;
 
-    // 檢查是否在圖片範圍內
     if (
       rawX >= 0 &&
       rawX <= imgDimensions.width &&
@@ -424,7 +414,6 @@ const App: React.FC = () => {
 
   // --- 事件處理：標記操作 ---
   const handleMarkerClick = (marker: Marker) => {
-    // 點擊單一標記，開啟編輯模式
     setActiveMarker(marker);
     setFormData({ 
       ...marker.data, 
@@ -433,18 +422,15 @@ const App: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  // 從聚合選單選擇了特定標記後觸發
   const handleClusterSelect = (marker: Marker) => {
     setClusterModalState((prev) => ({ ...prev, isOpen: false }));
     handleMarkerClick(marker);
   };
 
-  // 開啟新增標記視窗
   const openNewMarkerModal = (coord: { x: number; y: number }) => {
     const maxSeq = markers.reduce((max, m) => Math.max(max, m.seq), 0);
     const nextSeq = maxSeq + 1;
 
-    // 將座標轉換為百分比儲存，適應響應式縮放
     const xPct = (coord.x / imgDimensions.width) * 100;
     const yPct = (coord.y / imgDimensions.height) * 100;
 
@@ -456,19 +442,16 @@ const App: React.FC = () => {
       seq: nextSeq,
     });
 
-    // 重置表單預設值
     setFormData((prev) => ({
       ...prev,
-      // 使用上一次記憶的位置描述，若無則為空
       location: lastLocationRef.current,
       surfaceType: '雙面',
-      isIncomplete: false, // 重置狀態
-      noFireBarrier: false, // 重置狀態
+      isIncomplete: false,
+      noFireBarrier: false,
       metal1: '0', metal2: '0', metal3: '0', metal4: '0', metal6: '0',
       pvc1: '0', pvc2: '0', pvc3: '0', pvc4: '0', pvc6: '0',
       length: '0',
       width: '0',
-      code1: '0', code2: '0', code3: '0', code4: '0', code6: '0', // 兼容舊欄位，雖不再使用但避免型別錯誤
       tempImage: null,
     }));
 
@@ -500,7 +483,6 @@ const App: React.FC = () => {
       imageBlob: formData.tempImage,
     };
 
-    // 檢查是更新現有標記還是新增
     const isUpdate = markers.some(m => m.id === newMarker.id);
 
     if (isUpdate) {
@@ -509,20 +491,38 @@ const App: React.FC = () => {
       setMarkers((prev) => [...prev, newMarker]);
     }
 
-    // 寫入 IndexedDB
     await dbService.addMarker(newMarker);
-    
-    // 成功儲存後，更新記憶的位置描述
     lastLocationRef.current = formData.location;
 
     setIsModalOpen(false);
     setActiveMarker(null);
-    setMode('move'); // 儲存後切換回移動模式
+    setMode('move');
+  };
+
+  // --- 刪除標記邏輯 ---
+  const handleDeleteMarker = async () => {
+    // 檢查是否有有效的標記 ID
+    if (!activeMarker || !activeMarker.id) return;
+
+    try {
+      // 1. 更新 UI State (立即反應)
+      setMarkers(prev => prev.filter(m => m.id !== activeMarker.id));
+      
+      // 2. 刪除 IndexedDB 中的資料
+      await dbService.deleteMarker(activeMarker.id!);
+
+      // 3. 關閉視窗並切換回移動模式
+      setIsModalOpen(false);
+      setActiveMarker(null);
+      setMode('move');
+    } catch (e) {
+      console.error('Delete failed', e);
+      alert('刪除失敗，請重新整理後再試');
+    }
   };
 
   // --- 專案檔案處理 (Saving / Loading) ---
 
-  // 1. 儲存專案 (Save Project) -> .siteproj
   const handleSaveProject = async () => {
     if (!window.JSZip) {
       alert('系統模組載入中，請稍候');
@@ -532,19 +532,15 @@ const App: React.FC = () => {
     try {
       const zip = new window.JSZip();
       
-      // 準備中繼資料 (不含 blob/file)
-      // 平面圖資訊
       const floorPlansMeta = projectInfo.floorPlans.map(p => ({
         id: p.id,
         name: p.name,
-        // file 與 src 不存入 JSON，改用參照
-        fileName: `plans/${p.id}.png` // 假設都轉存為 png 或原檔
+        fileName: `plans/${p.id}.png`
       }));
 
-      // 標記資料
       const markersMeta = markers.map(m => ({
         ...m,
-        imageBlob: null, // 移除 Blob
+        imageBlob: null,
         imageFileName: `markers/${m.id}.jpg`
       }));
 
@@ -555,29 +551,21 @@ const App: React.FC = () => {
         version: "1.0"
       };
 
-      // 寫入 JSON
       zip.file("data.json", JSON.stringify(projectMeta));
 
-      // 寫入平面圖檔案
       const assetsFolder = zip.folder("assets");
       const plansFolder = assetsFolder?.folder("plans");
       const markersFolder = assetsFolder?.folder("markers");
 
-      // 批次加入平面圖
       projectInfo.floorPlans.forEach(p => {
-        // 使用原檔名副檔名或預設png，這裡簡單起見直接存入 Blob
         plansFolder?.file(`${p.id}.png`, p.file);
       });
 
-      // 批次加入標記照片
       markers.forEach(m => {
         markersFolder?.file(`${m.id}.jpg`, m.imageBlob);
       });
 
-      // 產生 ZIP Blob
       const content = await zip.generateAsync({ type: 'blob' });
-      
-      // 下載
       const link = document.createElement('a');
       link.href = URL.createObjectURL(content);
       link.download = `${projectInfo.name || 'Project'}.siteproj`;
@@ -591,28 +579,21 @@ const App: React.FC = () => {
     }
   };
 
-  // 2. 開啟專案 (Open Project)
   const handleLoadProject = async (file: File) => {
     if (!window.JSZip) return;
     
     setIsRestoring(true);
     try {
       const zip = await new window.JSZip().loadAsync(file);
-      
-      // 讀取 JSON
       const jsonText = await zip.file("data.json")?.async("text");
       if (!jsonText) throw new Error("Invalid project file: missing data.json");
       
       const meta = JSON.parse(jsonText);
-      
-      // 先清除當前資料庫 (避免 ID 衝突混淆)
       await dbService.clearAll();
 
-      // 還原平面圖
       const newPlans: FloorPlan[] = [];
       if (meta.floorPlans) {
         for (const pMeta of meta.floorPlans) {
-          // 讀取檔案
           const blob = await zip.file(`assets/${pMeta.fileName}`)?.async("blob");
           if (blob) {
              const fileObj = new File([blob], pMeta.name, { type: blob.type });
@@ -626,14 +607,12 @@ const App: React.FC = () => {
         }
       }
 
-      // 還原標記
       const newMarkers: Marker[] = [];
       if (meta.markers) {
          for (const mMeta of meta.markers) {
             const blob = await zip.file(`assets/${mMeta.imageFileName}`)?.async("blob");
             if (blob) {
               const fileObj = new File([blob], `marker_${mMeta.id}.jpg`, { type: 'image/jpeg' });
-              // 移除 JSON 中不必要的欄位並補回 Blob
               const { imageFileName, imageBlob, ...rest } = mMeta;
               newMarkers.push({
                 ...rest,
@@ -648,13 +627,11 @@ const App: React.FC = () => {
         floorPlans: newPlans
       };
 
-      // 存入 IndexedDB
       await dbService.saveProject(newProjectInfo);
       for (const m of newMarkers) {
         await dbService.addMarker(m);
       }
 
-      // 更新 State
       setProjectInfo(newProjectInfo);
       setMarkers(newMarkers);
       setStep('workspace');
@@ -665,14 +642,12 @@ const App: React.FC = () => {
     } catch (e) {
       console.error(e);
       alert('讀取失敗：檔案格式錯誤或損毀');
-      // 如果失敗，嘗試重新載入目前 DB 狀態 (雖然已經被 clear 了，這裡通常建議 reload)
       window.location.reload();
     } finally {
       setIsRestoring(false);
     }
   };
 
-  // --- 退出專案邏輯 ---
   const handleExitClick = () => {
     setShowExitDialog(true);
   };
@@ -680,14 +655,10 @@ const App: React.FC = () => {
   const handleConfirmExit = async (shouldSave: boolean) => {
     if (shouldSave) {
       await handleSaveProject();
-      // 等待一下確保下載對話框出現
       await new Promise(resolve => setTimeout(resolve, 500));
     }
     
-    // 清除資料庫
     await dbService.clearAll();
-    
-    // 重置所有狀態以回到 SetupScreen (首頁)，而不是重新載入頁面 (會跳出 APP)
     setProjectInfo({ name: '', floorPlans: [] });
     setMarkers([]);
     setStep('setup');
@@ -700,7 +671,6 @@ const App: React.FC = () => {
 
 
   // --- 匯出報告 (Export Report) ---
-  // 產生匯出檔名格式
   const getMarkerFileName = (m: Marker) => {
     const d = m.data;
     let floorStr = d.floor;
@@ -708,11 +678,8 @@ const App: React.FC = () => {
     floorStr += 'F';
     const seqStr = String(m.seq).padStart(3, '0');
     
-    // 檔名格式: 序號_樓層_位置_金屬1...金屬6_PVC1...PVC6_長_寬_工法_不完整_無防火帶
     const metalPart = `${d.metal1 || 0}_${d.metal2 || 0}_${d.metal3 || 0}_${d.metal4 || 0}_${d.metal6 || 0}`;
     const pvcPart = `${d.pvc1 || 0}_${d.pvc2 || 0}_${d.pvc3 || 0}_${d.pvc4 || 0}_${d.pvc6 || 0}`;
-    
-    // 狀態後綴
     const incompleteFlag = d.isIncomplete ? '1' : '0';
     const noFireBarrierFlag = d.noFireBarrier ? '1' : '0';
 
@@ -749,6 +716,7 @@ const App: React.FC = () => {
 
     for (const planIndex of uniquePlansIndices) {
       const plan = projectInfo.floorPlans[planIndex];
+      // 取得此平面圖的所有標記
       const planMarkers = markers.filter((m) => m.planIndex === planIndex);
 
       try {
@@ -761,29 +729,46 @@ const App: React.FC = () => {
         if (ctx) {
           ctx.drawImage(img, 0, 0);
 
-          // 在 Canvas 上繪製標記與編號
-          planMarkers.forEach((m) => {
-            const x = (m.x / 100) * canvas.width;
-            const y = (m.y / 100) * canvas.height;
-            // 計算標記大小 (隨圖片尺寸縮放)
-            const size = Math.max(30, canvas.width * 0.02);
+          // 計算匯出時的標記大小
+          // 調整為 0.8% 的圖片寬度 (或最小 24px)，使標記在匯出圖中保持精緻比例
+          const markerSize = Math.max(24, img.width * 0.008);
+          
+          // 在匯出時同樣應用標記聚合邏輯
+          // 聚合閾值設為標記大小的 1.2 倍，確保重疊標記被合併
+          const exportClusters = getClusteredMarkers(planMarkers, img.width, img.height, markerSize * 1.2);
 
-            ctx.fillStyle = '#FFFF00';
-            ctx.strokeStyle = '#FF0000';
-            ctx.lineWidth = size * 0.15;
-            ctx.beginPath();
-            ctx.rect(x - size / 2, y - size / 2, size, size);
-            ctx.fill();
-            ctx.stroke();
+          // 繪製標記
+          exportClusters.forEach((c) => {
+            const x = (c.x / 100) * canvas.width;
+            const y = (c.y / 100) * canvas.height;
+            const text = c.label;
 
+            // 根據標記大小動態調整字體
+            const fontSize = markerSize * 0.55; 
+            ctx.font = `bold ${fontSize}px Arial`;
+            const textMetrics = ctx.measureText(text);
+
+            // 計算背景框寬度：若文字較長 (如 "3,4,5") 則拉寬
+            const boxWidth = Math.max(markerSize, textMetrics.width + (markerSize * 0.4));
+            const boxHeight = markerSize;
+
+            // 繪製背景 (黃色 #FACC15)
+            ctx.fillStyle = '#FACC15';
+            ctx.fillRect(x - boxWidth / 2, y - boxHeight / 2, boxWidth, boxHeight);
+
+            // 繪製邊框 (紅色 #DC2626)
+            ctx.strokeStyle = '#DC2626';
+            ctx.lineWidth = markerSize * 0.08;
+            ctx.strokeRect(x - boxWidth / 2, y - boxHeight / 2, boxWidth, boxHeight);
+
+            // 繪製文字 (黑色)
             ctx.fillStyle = '#000000';
-            ctx.font = `bold ${size * 0.7}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(String(m.seq), x, y);
+            // 微調文字垂直置中
+            ctx.fillText(text, x, y + (markerSize * 0.05));
           });
 
-          // 轉換 Canvas 為 Blob
           const mapBlob = await new Promise<Blob | null>((resolve) =>
             canvas.toBlob(resolve, 'image/jpeg')
           );
@@ -800,15 +785,12 @@ const App: React.FC = () => {
     const content = await zip.generateAsync({ type: 'blob' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(content);
-    link.download = `${folderName}_Report.zip`; // 區別於 .siteproj
+    link.download = `${folderName}_Report.zip`; 
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
-    // 匯出報告不自動清除資料，因為使用者可能要繼續存檔
   };
 
-  // --- 畫面渲染 ---
   if (isRestoring) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-500">
@@ -817,38 +799,34 @@ const App: React.FC = () => {
     );
   }
 
-  // 步驟 1: 設定畫面
   if (step === 'setup') {
     return (
       <SetupScreen
         projectInfo={projectInfo}
         setProjectInfo={setProjectInfo}
-        // 將上傳事件改為我們的新邏輯：由 SetupScreen 元件內部判斷是否為 PDF
-        onFileUpload={addFloorPlans as any} // 為了相容性暫時轉型，實際邏輯在元件內
+        onFileUpload={addFloorPlans as any} 
         onUpdatePlanName={updatePlanName}
         onRemovePlan={removePlan}
         onStart={startProject}
         onReset={handleReset}
         onLoadProject={handleLoadProject}
         isZipLoaded={isZipLoaded}
-        isPDFLoaded={isPDFLoaded} // 傳遞 PDF 載入狀態
+        isPDFLoaded={isPDFLoaded} 
       />
     );
   }
 
   const currentPlan = projectInfo.floorPlans[currentPlanIndex];
 
-  // 步驟 2: 工作區 (地圖標記) - Fixed -> Absolute
   return (
     <div className="absolute inset-0 bg-gray-900 flex flex-col overflow-hidden">
-      {/* 頂部導覽列 - Liquid Glass Style */}
+      {/* 頂部導覽列 */}
       <div className="bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-sm px-4 py-3 z-20 flex items-center justify-between shrink-0">
         <div className="flex flex-col min-w-0">
           <span className="text-xs text-gray-500 font-bold truncate max-w-[150px]">
             {projectInfo.name}
           </span>
           <div className="relative inline-flex items-center gap-2">
-            {/* 切換平面圖下拉選單 */}
             <div className="relative inline-flex items-center">
               <select
                 value={currentPlanIndex}
@@ -865,8 +843,6 @@ const App: React.FC = () => {
               </select>
               <ChevronDown className="absolute right-0 w-4 h-4 pointer-events-none text-gray-500" />
             </div>
-
-            {/* 新增平面圖按鈕 */}
             <button
               onClick={() => setShowAddPlanModal(true)}
               className="text-blue-600 hover:text-blue-800 transition p-1"
@@ -877,9 +853,7 @@ const App: React.FC = () => {
           </div>
         </div>
         
-        {/* 按鈕群組 - Glass Buttons */}
         <div className="flex items-center gap-2">
-          {/* 儲存專案按鈕 */}
           <button
              onClick={handleSaveProject}
              disabled={!isZipLoaded}
@@ -888,8 +862,6 @@ const App: React.FC = () => {
           >
             <Save size={20} />
           </button>
-
-          {/* 匯出報告按鈕 */}
           <button
             onClick={handleExport}
             disabled={!isZipLoaded}
@@ -903,8 +875,6 @@ const App: React.FC = () => {
             <Download size={18} />
             <span className="hidden sm:inline">匯出</span>
           </button>
-
-          {/* 退出專案按鈕 */}
           <button
             onClick={handleExitClick}
             title="退出專案"
@@ -941,7 +911,6 @@ const App: React.FC = () => {
               const imgW = img.width;
               const imgH = img.height;
               setImgDimensions({ width: imgW, height: imgH });
-              // 圖片載入後，自動縮放至符合容器寬度
               if (containerRef.current) {
                 const containerW = containerRef.current.clientWidth;
                 const scale = containerW / imgW;
@@ -957,30 +926,26 @@ const App: React.FC = () => {
                 style={{ left: `${m.x}%`, top: `${m.y}%` }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  // 只有在移動模式下才允許點擊標記
                   if (mode !== 'move') return;
 
                   if (m.isCluster) {
-                    // 如果是聚合點：開啟選擇清單
-                    // 找出所有屬於此聚合的標記物件
                     const clusterMarkers = markers.filter(marker => m.allIds.includes(marker.id));
-                    // 依序號排序
                     clusterMarkers.sort((a, b) => a.seq - b.seq);
                     setClusterModalState({ isOpen: true, markers: clusterMarkers });
                   } else {
-                    // 如果是單一標記：直接開啟編輯視窗
                     const target = markers.find(marker => marker.id === m.id);
                     if (target) handleMarkerClick(target);
                   }
                 }}
-                className={`absolute -translate-x-1/2 -translate-y-1/2 min-w-[1.625rem] h-[1.625rem] px-1 bg-yellow-400 border border-red-600 flex items-center justify-center text-[13px] font-bold text-black shadow-lg shadow-black/20 z-10 whitespace-nowrap`}
+                // 調整樣式以適應 "3,4,5" 這種長文字：使用 w-auto 和 px-1.5，移除固定寬度
+                className={`absolute -translate-x-1/2 -translate-y-1/2 w-auto min-w-[1.625rem] h-[1.625rem] px-1.5 bg-yellow-400 border border-red-600 flex items-center justify-center text-[13px] font-bold text-black shadow-lg shadow-black/20 z-10 whitespace-nowrap`}
               >
                 {m.label}
               </div>
             ))}
         </div>
 
-        {/* 放大鏡元件 (僅在標記模式且觸控時顯示) */}
+        {/* 放大鏡元件 */}
         {isTouching && mode === 'mark' && imgCoord.x !== null && (
           <div
             className="absolute pointer-events-none rounded-full border-4 border-white shadow-2xl overflow-hidden bg-gray-100 z-50 flex items-center justify-center"
@@ -992,15 +957,13 @@ const App: React.FC = () => {
             }}
           >
             <div className="relative w-full h-full overflow-hidden bg-black">
-              {/* 內部容器，同步顯示放大的地圖與標記 */}
               <div
                 style={{
                   position: 'absolute',
                   left: 0,
                   top: 0,
-                  width: imgDimensions.width * 2, // 2倍放大
+                  width: imgDimensions.width * 2, 
                   height: imgDimensions.height * 2,
-                  // 計算位移，確保放大鏡中心對準觸控點偏移後的位置
                   transform: `translate(${-(imgCoord.x || 0) * 2 + 70}px, ${
                     -(imgCoord.y || 0) * 2 + 70
                   }px)`,
@@ -1015,19 +978,16 @@ const App: React.FC = () => {
                     maxWidth: 'none',
                   }}
                 />
-                {/* 在放大鏡中也顯示標記 */}
                 {visibleMarkers.map((m) => (
                   <div
                     key={`loupe-${m.id}`}
                     style={{ left: `${m.x}%`, top: `${m.y}%` }}
-                    className={`absolute -translate-x-1/2 -translate-y-1/2 min-w-[1.625rem] h-[1.625rem] px-1 bg-yellow-400 border border-red-600 flex items-center justify-center text-[13px] font-bold text-black shadow-sm whitespace-nowrap`}
+                    className={`absolute -translate-x-1/2 -translate-y-1/2 w-auto min-w-[1.625rem] h-[1.625rem] px-1.5 bg-yellow-400 border border-red-600 flex items-center justify-center text-[13px] font-bold text-black shadow-sm whitespace-nowrap`}
                   >
                     {m.label}
                   </div>
                 ))}
               </div>
-
-              {/* 十字準心 */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="w-0.5 h-6 bg-red-500/80 absolute"></div>
                 <div className="w-6 h-0.5 bg-red-500/80 absolute"></div>
@@ -1038,7 +998,6 @@ const App: React.FC = () => {
         )}
       </div>
 
-      {/* 底部功能列 - Liquid Glass Style */}
       <div className="bg-white/80 backdrop-blur-xl border-t border-white/20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] pb-safe pt-2 px-2 flex justify-around items-center shrink-0 z-20">
         <button
           onClick={() => setMode('move')}
@@ -1069,7 +1028,6 @@ const App: React.FC = () => {
         </button>
       </div>
 
-      {/* 聚合選擇視窗 */}
       <ClusterSelectModal
         isOpen={clusterModalState.isOpen}
         onClose={() => setClusterModalState(prev => ({ ...prev, isOpen: false }))}
@@ -1077,7 +1035,6 @@ const App: React.FC = () => {
         onSelect={handleClusterSelect}
       />
 
-      {/* 標記編輯視窗 */}
       <MarkerModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -1085,13 +1042,13 @@ const App: React.FC = () => {
         formData={formData}
         setFormData={setFormData}
         onSave={saveMarker}
+        onDelete={handleDeleteMarker} 
         onPhotoCapture={handlePhotoCapture}
         FLOOR_OPTIONS={FLOOR_OPTIONS}
         NUMBER_OPTIONS={NUMBER_OPTIONS}
         isEditing={!!isEditing}
       />
 
-      {/* 新增平面圖視窗 */}
       <AddPlanModal 
         isOpen={showAddPlanModal}
         onClose={() => setShowAddPlanModal(false)}
@@ -1099,7 +1056,6 @@ const App: React.FC = () => {
         isPDFLoaded={isPDFLoaded}
       />
 
-      {/* 退出確認對話框 */}
       {showExitDialog && (
         <div className="absolute inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl p-6 w-full max-w-sm animate-in zoom-in-95 duration-200">
