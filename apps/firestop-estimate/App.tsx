@@ -499,19 +499,39 @@ const App: React.FC = () => {
     setMode('move');
   };
 
-  // --- 刪除標記邏輯 ---
+  // --- 刪除標記邏輯 (更新: 自動遞補編號) ---
   const handleDeleteMarker = async () => {
-    // 檢查是否有有效的標記 ID
     if (!activeMarker || !activeMarker.id) return;
 
+    // 1. 取得被刪除標記的序號
+    const deletedSeq = activeMarker.seq || 0;
+
     try {
-      // 1. 更新 UI State (立即反應)
-      setMarkers(prev => prev.filter(m => m.id !== activeMarker.id));
+      // 2. 計算新的標記列表：移除目標，並將後續標記的 seq 減 1
+      const updatedMarkers = markers
+        .filter(m => m.id !== activeMarker.id)
+        .map(m => {
+          // 如果該標記的序號大於被刪除的序號，則序號減 1
+          if (m.seq > deletedSeq) {
+            return { ...m, seq: m.seq - 1 };
+          }
+          return m;
+        });
+
+      // 3. 更新 UI State (立即反應)
+      setMarkers(updatedMarkers);
       
-      // 2. 刪除 IndexedDB 中的資料
+      // 4. 更新 IndexedDB
+      // 4a. 刪除目標
       await dbService.deleteMarker(activeMarker.id!);
 
-      // 3. 關閉視窗並切換回移動模式
+      // 4b. 找出所有序號有變動的標記，並更新到資料庫
+      const changedMarkers = updatedMarkers.filter(m => m.seq >= deletedSeq);
+      
+      // 使用 Promise.all 平行處理資料庫更新
+      await Promise.all(changedMarkers.map(m => dbService.addMarker(m)));
+
+      // 5. 關閉視窗並切換回移動模式
       setIsModalOpen(false);
       setActiveMarker(null);
       setMode('move');
